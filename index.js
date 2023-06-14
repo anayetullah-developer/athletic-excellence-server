@@ -22,6 +22,7 @@ const client = new MongoClient(uri, {
 });
 
 const classCollection = client.db("athletic-excellence").collection("classes");
+const selectedClassCollection = client.db("athletic-excellence").collection("selectedClasses");
 
 
 async function run() {
@@ -38,7 +39,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-//Instructor 
+//Instructor apis
 app.post("/instructor/addClass", async (req, res) => {
   const classInfo = req.body;
   const result = await classCollection.insertOne(classInfo);
@@ -57,7 +58,6 @@ app.get("/instructor/myClasses/:id", async(req, res) => {
   const result = await classCollection.findOne(query);
   res.send(result);
 })
-
 
 app.patch("/instructor/updateClass/:id", async (req, res) => {
   const id = req.params.id;
@@ -79,6 +79,26 @@ app.patch("/instructor/updateClass/:id", async (req, res) => {
 });
 
 
+// Student APIs
+app.post("/student/selectedClass", async (req, res) => {
+  const classInfo = req.body;
+  const result = await selectedClassCollection.insertOne(classInfo);
+  console.log(result);
+  res.send(result)
+})
+
+app.get("/student/selectedClasses", async(req, res) => {
+  const result = await selectedClassCollection.find().toArray();
+  console.log(result);
+  res.send(result);
+})
+
+app.delete("/student/selectedClass/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)};
+  const result = await selectedClassCollection.deleteOne(query);
+  res.send(result);
+})
 
 app.get("/", (req, res) => {
     res.send("Server is working")
