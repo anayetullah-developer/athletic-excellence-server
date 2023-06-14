@@ -46,7 +46,10 @@ app.post("/instructor/addClass", async (req, res) => {
   res.send(result)
 })
 
-
+app.get("/instructor/myClasses", async(req, res) => {
+  const result = await classCollection.find().toArray();
+  res.send(result);
+})
 
 
 app.get("/", (req, res) => {
