@@ -9,7 +9,7 @@ app.use(express.json())
 require('dotenv').config();
 
 //MongoDB Connection
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.kkdykse.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -38,7 +38,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-//Classes
+//Instructor 
 app.post("/instructor/addClass", async (req, res) => {
   const classInfo = req.body;
   const result = await classCollection.insertOne(classInfo);
@@ -50,6 +50,34 @@ app.get("/instructor/myClasses", async(req, res) => {
   const result = await classCollection.find().toArray();
   res.send(result);
 })
+
+app.get("/instructor/myClasses/:id", async(req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await classCollection.findOne(query);
+  res.send(result);
+})
+
+
+app.patch("/instructor/updateClass/:id", async (req, res) => {
+  const id = req.params.id;
+  const body = req.body;
+  console.log(body);
+  const query = { _id: new ObjectId(id) };
+  const updateToy = {
+    $set: {
+      instructorName: body.instructorName, 
+      photoURL: body.photoURL,
+      price: body.price,
+      name: body.name,
+      email: body.email,
+      seats: body.seats,
+    },
+  };
+  const result = await classCollection.updateOne(query, updateToy);
+  res.send(result);
+});
+
 
 
 app.get("/", (req, res) => {
