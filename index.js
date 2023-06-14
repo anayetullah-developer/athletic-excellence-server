@@ -21,6 +21,9 @@ const client = new MongoClient(uri, {
   }
 });
 
+const classCollection = client.db("athletic-excellence").collection("classes");
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -35,14 +38,13 @@ async function run() {
 }
 run().catch(console.dir);
 
-
-
-
-
-
-
-
-
+//Classes
+app.post("/instructor/addClass", async (req, res) => {
+  const classInfo = req.body;
+  const result = await classCollection.insertOne(classInfo);
+  console.log(result);
+  res.send(result)
+})
 
 
 
