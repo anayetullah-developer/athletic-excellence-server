@@ -23,6 +23,7 @@ const client = new MongoClient(uri, {
 
 const classCollection = client.db("athletic-excellence").collection("classes");
 const selectedClassCollection = client.db("athletic-excellence").collection("selectedClasses");
+const userCollection = client.db("athletic-excellence").collection("users");
 
 
 async function run() {
@@ -97,6 +98,24 @@ app.delete("/student/selectedClass/:id", async (req, res) => {
   const id = req.params.id;
   const query = {_id: new ObjectId(id)};
   const result = await selectedClassCollection.deleteOne(query);
+  res.send(result);
+})
+
+//User APIs
+
+app.post("/users", async (req, res) => {
+  const user = req.body;
+  const query = {email: user.email}
+  const existingUser = await userCollection.findOne(query);
+  if(existingUser) {
+    return ({message: "User already exists"});
+  }
+  const result = await userCollection.insertOne(user);
+  res.send(result)
+})
+
+app.get("/users", async(req, res) => {
+  const result = await userCollection.find().toArray();
   res.send(result);
 })
 
