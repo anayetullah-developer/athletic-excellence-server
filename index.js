@@ -62,6 +62,27 @@ async function run() {
 }
 run().catch(console.dir);
 
+//verify admin 
+const verifyAdmin = async (req, res, next) => {
+  const email = req.decoded.email;
+  const query = {email: email};
+  const user = await userCollection.findOne(query);
+  if(user?.role !== 'admin') {
+    return res.status(403).send({error: true, message: "Forbidden Access"});
+  }
+  next();
+}
+//verify instructor
+const verifyInstructor = async (req, res, next) => {
+  const email = req.decoded.email;
+  const query = {email: email};
+  const user = await classCollection.findOne(query);
+  if(user?.role !== 'instructor') {
+    return res.status(403).send({error: true, message: "Forbidden Access"});
+  }
+  next();
+}
+
 //jwt sign
 
 app.post("/jwt", (req, res) => {
@@ -72,14 +93,14 @@ app.post("/jwt", (req, res) => {
 
 
 //Instructor apis
-app.post("/instructor/addClass", async (req, res) => {
+app.post("/instructor/addClass", verifyJWT, verifyInstructor, async (req, res) => {
   const classInfo = req.body;
   const result = await classCollection.insertOne(classInfo);
   console.log(result);
   res.send(result);
 });
 
-app.get("/instructor/myClasses", verifyJWT, async (req, res) => {
+app.get("/instructor/myClasses", verifyJWT, verifyInstructor, async (req, res) => {
   const email = req.query.email;
   
   if(!email) {
@@ -97,14 +118,14 @@ app.get("/instructor/myClasses", verifyJWT, async (req, res) => {
   res.send(result);
 });
 
-app.get("/instructor/myClasses/:id", async (req, res) => {
+app.get("/instructor/myClasses/:id", verifyJWT, verifyInstructor, async (req, res) => {
   const id = req.params.id;
   const query = { _id: new ObjectId(id) };
   const result = await classCollection.findOne(query);
   res.send(result);
 });
 
-app.patch("/instructor/updateClass/:id", async (req, res) => {
+app.patch("/instructor/updateClass/:id", verifyJWT, verifyInstructor, async (req, res) => {
   const id = req.params.id;
   const body = req.body;
   console.log(body);
@@ -123,7 +144,8 @@ app.patch("/instructor/updateClass/:id", async (req, res) => {
   res.send(result);
 });
 
-app.patch("/instructor/feedbackClass/:id", async (req, res) => {
+
+app.patch("/instructor/feedbackClass/:id", verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
   const body = req.body;
   console.log(body);
@@ -172,13 +194,13 @@ app.post("/users", async (req, res) => {
   res.send(result);
 });
 
-app.get("/users", async (req, res) => {
+app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
   const result = await userCollection.find().toArray();
   res.send(result);
 });
 
 // Admin manage user Apis
-app.patch("/users/admin/:id", async (req, res) => {
+app.patch("/users/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
   const filter = { _id: new ObjectId(id) };
 
@@ -192,7 +214,7 @@ app.patch("/users/admin/:id", async (req, res) => {
   res.send(result);
 });
 
-app.patch("/users/instructor/:id", async (req, res) => {
+app.patch("/users/instructor/:id", verifyJWT, verifyAdmin,  async (req, res) => {
   const id = req.params.id;
   const filter = { _id: new ObjectId(id) };
 
@@ -207,7 +229,7 @@ app.patch("/users/instructor/:id", async (req, res) => {
 });
 
 // Admin manage classes apis
-app.patch("/classes/approved/:id", async (req, res) => {
+app.patch("/classes/approved/:id", verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
   const filter = { _id: new ObjectId(id) };
 
@@ -221,7 +243,7 @@ app.patch("/classes/approved/:id", async (req, res) => {
   res.send(result);
 });
 
-app.patch("/classes/denied/:id", async (req, res) => {
+app.patch("/classes/denied/:id", verifyJWT, verifyAdmin, async (req, res) => {
   const id = req.params.id;
   const filter = { _id: new ObjectId(id) };
 
@@ -245,6 +267,20 @@ app.get("/users/admin/:email", verifyJWT, async (req, res) => {
   const query = {email: email}
   const user = await userCollection.findOne(query);
   const result = {admin: user?.role === "admin"}
+  console.log(result)
+  res.send(result);
+})
+
+// Is instructor
+app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
+  const email = req.params.email;
+  if(req.decoded.email !== email) {
+    req.send({instructor: false})
+  }
+
+  const query = {email: email}
+  const user = await userCollection.findOne(query);
+  const result = {instructor: user?.role === "instructor"}
   console.log(result)
   res.send(result);
 })
