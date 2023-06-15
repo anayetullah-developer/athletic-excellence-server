@@ -68,7 +68,7 @@ app.patch("/instructor/updateClass/:id", async (req, res) => {
   const body = req.body;
   console.log(body);
   const query = { _id: new ObjectId(id) };
-  const updateToy = {
+  const updateClass = {
     $set: {
       instructorName: body.instructorName,
       photoURL: body.photoURL,
@@ -78,7 +78,21 @@ app.patch("/instructor/updateClass/:id", async (req, res) => {
       seats: body.seats,
     },
   };
-  const result = await classCollection.updateOne(query, updateToy);
+  const result = await classCollection.updateOne(query, updateClass);
+  res.send(result);
+});
+
+app.patch("/instructor/feedbackClass/:id", async (req, res) => {
+  const id = req.params.id;
+  const body = req.body;
+  console.log(body);
+  const query = { _id: new ObjectId(id) };
+  const updateClass = {
+    $set: {
+      feedback: req.body.adminFeedback
+    },
+  };
+  const result = await classCollection.updateOne(query, updateClass);
   res.send(result);
 });
 
@@ -121,7 +135,7 @@ app.get("/users", async (req, res) => {
   res.send(result);
 });
 
-// Admin Apis
+// Admin manage user Apis
 app.patch("/users/admin/:id", async (req, res) => {
   const id = req.params.id;
   const filter = { _id: new ObjectId(id) };
@@ -149,6 +163,36 @@ app.patch("/users/instructor/:id", async (req, res) => {
   const result = await userCollection.updateOne(filter, updatedUser);
   res.send(result);
 });
+
+// Admin manage classes apis
+app.patch("/classes/approved/:id", async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+
+  const updatedUser = {
+    $set: {
+      status: "approved",
+    },
+  };
+
+  const result = await classCollection.updateOne(filter, updatedUser);
+  res.send(result);
+});
+
+app.patch("/classes/denied/:id", async (req, res) => {
+  const id = req.params.id;
+  const filter = { _id: new ObjectId(id) };
+
+  const updatedUser = {
+    $set: {
+      status: "denied",
+    },
+  };
+
+  const result = await classCollection.updateOne(filter, updatedUser);
+  res.send(result);
+});
+
 
 app.get("/", (req, res) => {
   res.send("Server is working");
