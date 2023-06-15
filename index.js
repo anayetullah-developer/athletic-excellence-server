@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 
 //middleware
@@ -42,6 +43,15 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+//jwt sign
+
+app.post("/jwt", (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn : "1h"})
+  res.send({token});
+})
+
 
 //Instructor apis
 app.post("/instructor/addClass", async (req, res) => {
