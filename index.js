@@ -9,6 +9,24 @@ app.use(cors());
 app.use(express.json());
 require("dotenv").config();
 
+// Verify Jwt
+const verifyJWT = (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if(!authorization) {
+    return res.status(401).send({error: true, message: "Unauthorized Access"})
+  }
+
+  const token = authorization.split(' ')[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+    if(error) {
+      return res.status(401).send({error: true, message: "Unauthorized access"})
+    }
+
+    req.decoded = decoded;
+    next()
+  })
+}
 //MongoDB Connection
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.kkdykse.mongodb.net/?retryWrites=true&w=majority`;
@@ -61,8 +79,21 @@ app.post("/instructor/addClass", async (req, res) => {
   res.send(result);
 });
 
-app.get("/instructor/myClasses", async (req, res) => {
-  const result = await classCollection.find().toArray();
+app.get("/instructor/myClasses", verifyJWT, async (req, res) => {
+  const email = req.query.email;
+  
+  if(!email) {
+    res.send([])
+  }
+
+  const decodedEmail = req.decoded.email;
+
+  if(email !== decodedEmail) {
+    return res.status(401).send({error: true, message: "forbidden access"})
+  };
+
+  const query = {email: email}
+  const result = await classCollection.find(query).toArray();
   res.send(result);
 });
 
@@ -125,6 +156,7 @@ app.delete("/student/selectedClass/:id", async (req, res) => {
   const query = { _id: new ObjectId(id) };
   const result = await selectedClassCollection.deleteOne(query);
   res.send(result);
+
 });
 
 //User APIs
@@ -202,6 +234,20 @@ app.patch("/classes/denied/:id", async (req, res) => {
   const result = await classCollection.updateOne(filter, updatedUser);
   res.send(result);
 });
+
+// IsAdmin
+app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+  const email = req.params.email;
+  if(req.decoded.email !== email) {
+    req.send({admin: false})
+  }
+
+  const query = {email: email}
+  const user = await userCollection.findOne(query);
+  const result = {admin: user?.role === "admin"}
+  console.log(result)
+  res.send(result);
+})
 
 
 app.get("/", (req, res) => {
