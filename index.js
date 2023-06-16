@@ -3,6 +3,8 @@ const app = express();
 const cors = require("cors");
 const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
+const Stripe = require('stripe');
+const stripe = Stripe('sk_test_51NJPQXGDnGXs9CejPylZQ15GHlQGx2OyB63EVtGycuzYuCA7R29QrJyeIjhCkAXuuFIufKI5XSbuvfT6kiHyqkWg00K89t1cBX');
 
 //middleware
 app.use(cors());
@@ -76,7 +78,7 @@ const verifyAdmin = async (req, res, next) => {
 const verifyInstructor = async (req, res, next) => {
   const email = req.decoded.email;
   const query = {email: email};
-  const user = await classCollection.findOne(query);
+  const user = await userCollection.findOne(query);
   if(user?.role !== 'instructor') {
     return res.status(403).send({error: true, message: "Forbidden Access"});
   }
@@ -91,6 +93,11 @@ app.post("/jwt", (req, res) => {
   res.send({token});
 })
 
+//All Classes Api
+app.get("/allClasses", verifyJWT, async (req, res) => {
+  const result = await classCollection.find().toArray();
+  res.send(result);
+});
 
 //Instructor apis
 app.post("/instructor/addClass", verifyJWT, verifyInstructor, async (req, res) => {
@@ -179,6 +186,13 @@ app.delete("/student/selectedClass/:id", async (req, res) => {
   const result = await selectedClassCollection.deleteOne(query);
   res.send(result);
 
+});
+
+app.get("/student/payment/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) };
+  const result = await selectedClassCollection.findOne(query);
+  res.send(result);
 });
 
 //User APIs
@@ -285,6 +299,20 @@ app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
   res.send(result);
 })
 
+ // payment intent
+ app.post("/create-payment-intent", async (req, res) => {
+  const { price } = req.body;
+  const amount = parseInt(price * 100);
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amount,
+    currency: 'usd',
+    payment_method_types: ['card']
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret
+  })
+})
 
 app.get("/", (req, res) => {
   res.send("Server is working");
