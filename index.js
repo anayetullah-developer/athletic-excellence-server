@@ -3,8 +3,11 @@ const app = express();
 const cors = require("cors");
 const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
-const Stripe = require('stripe');
-const stripe = Stripe('sk_test_51NJPQXGDnGXs9CejPylZQ15GHlQGx2OyB63EVtGycuzYuCA7R29QrJyeIjhCkAXuuFIufKI5XSbuvfT6kiHyqkWg00K89t1cBX');
+const Stripe = require("stripe");
+require("dotenv").config();
+const stripe = Stripe(
+  process.env.PAYMENT_SECRET_KEY
+);
 
 //middleware
 app.use(cors());
@@ -47,11 +50,12 @@ const selectedClassCollection = client
   .db("athletic-excellence")
   .collection("selectedClasses");
 const userCollection = client.db("athletic-excellence").collection("users");
+const paymentHistoryCollection = client.db("athletic-excellence").collection("paymentInfo");
 
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -313,6 +317,29 @@ app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
     clientSecret: paymentIntent.client_secret
   })
 })
+
+// Payment info
+app.post("/payment-info", verifyJWT, async (req, res) => {
+  const payment = req.body;
+  const id = req.body.id;
+  let seats = parseFloat(req.body.seats);
+  const { classId, name, email, transactionId, price, date, className } = payment;
+  const newPayment = { name, email, transactionId, price, date, className };
+  const insertResult = await paymentHistoryCollection.insertOne(newPayment);
+
+  const query = { _id: new ObjectId(id) } 
+  const deleteResult = await selectedClassCollection.deleteOne(query)
+
+  const updateQuery = { _id: new ObjectId(classId) }
+  const updatedClass = {
+    $set: {
+      seats: seats - 1
+    }
+  };
+
+  const updateResult = await classCollection.updateOne(updateQuery, updatedClass);
+  res.send({ insertResult, deleteResult, updateResult });
+});
 
 app.get("/", (req, res) => {
   res.send("Server is working");
