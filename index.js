@@ -98,12 +98,18 @@ app.post("/jwt", (req, res) => {
 })
 
 //All Classes Api
-app.get("/allClasses", verifyJWT, async (req, res) => {
+app.get("/allClasses", async (req, res) => {
   const result = await classCollection.find().toArray();
   res.send(result);
 });
 
 //Instructor apis
+app.get("/allInstructors", async (req, res) => {
+  const query = {"role" : "instructor"}
+  const result = await userCollection.find(query).toArray();
+  res.send(result);
+})
+
 app.post("/instructor/addClass", verifyJWT, verifyInstructor, async (req, res) => {
   const classInfo = req.body;
   const result = await classCollection.insertOne(classInfo);
