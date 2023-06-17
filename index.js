@@ -103,9 +103,22 @@ app.get("/allClasses", async (req, res) => {
   res.send(result);
 });
 
+// Popular classes
+app.get("/popular-classes", async (req, res) => {
+  const query = { enrollment: { $gt: 5 } }
+  const result = await classCollection.find(query).toArray();
+  res.send(result);
+})
+
 //Instructor apis
 app.get("/allInstructors", async (req, res) => {
   const query = {"role" : "instructor"}
+  const result = await userCollection.find(query).toArray();
+  res.send(result);
+})
+
+app.get("/popular-instructors", async (req, res) => {
+  const query = { students: { $gt: 10 } }
   const result = await userCollection.find(query).toArray();
   res.send(result);
 })
